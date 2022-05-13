@@ -1,21 +1,17 @@
 import pandas as pd # import the data as dataframe and manipulate the data
 import datetime # to create data-time variables
 import numpy as np
-from influxdb import InfluxDBClient
+from influxdb import InfluxDBClient, DataFrameClient
 import time
 import psycopg2
 import pdb
+import logging
 
-def add_start_end_rows(df_queried_data, query_end_time, column_for_detect='W'):
+def add_start_end_rows(df_queried_data, query_end_time, start_row_value=None, column_for_detect='W'):
     
     # add starting row
     
-    global start_row_value
-    
-    try:
-        df_queried_data_with_start = pd.concat([start_row_value, df_queried_data])
-    except:
-        df_queried_data_with_start = df_queried_data
+    df_queried_data_with_start = pd.concat([start_row_value, df_queried_data])
 
     # add ending row
 
@@ -47,15 +43,12 @@ def update_buffer(df_queried_data_with_start_end, next_query_start_time,
     df_last_values["time"] = next_query_start_time
     
     df_last_values_with_time = df_last_values.reset_index().set_index([time_column])
-    
-    global start_row_value
+
     start_row_value = df_last_values_with_time[[column_for_detect, *columns_for_pivot]]
     
-    global df_buffered_rows_for_next_query
     df_buffered_rows_for_next_query = df_queried_data_with_start_end.loc[index_for_buffer]
-    
-    global previous_query_end_time
-    previous_query_end_time = df_queried_data_with_start_end.index.max()
+
+    return start_row_value, df_buffered_rows_for_next_query
     
 def query_iot_data(db, query_start_time, query_end_time, nid, channels_list=None):
     
@@ -222,6 +215,70 @@ def sr_to_df(sr_on_off_actions_scanned, columns_for_pivot=['site_name', 'asset_t
     print("\n", df_on_off_actions_frame, "\n")
 
     df_on_off_actions_export = df_on_off_actions_frame.T.stack().rename(action_column).reset_index()[[time_column, action_column, *columns_for_pivot]]
-        
-    return df_on_off_actions_export
+    
+    return df_on_off_actions_export.set_index(time_column)
 
+def save_on_off_to_db(db, df_for_export, columns_for_tag):
+
+    client_test = DataFrameClient(host=db.host, port=db.port, database=db.database)
+    client_test.write_points(df_for_export, db.sink_table, 
+                                    tag_columns=columns_for_tag, 
+                                    batch_size=10000,
+                                    time_precision='ms')
+
+def batch_processing(db, df_meta, time_range, 
+                     resample_freq,
+                     padding_query_detect, 
+                     columns_for_pivot=['site_name', 'asset_type'], 
+                     column_for_detect='W', 
+                     columns_for_join=['nid', 'channel'],
+                     start_row_value=None, 
+                     df_buffered_rows_for_next_query=None):
+    
+    detect_start_time, detect_end_time = time_range
+    
+    print(time_range[0].strftime("%Y-%m-%d %H:%M:%S"), end=", ") # "%Y-%m-%d %H:%M:%S"
+    
+    log_text = time_range[0].strftime("%Y-%m-%d %H:%M:%S")
+    
+    logging.info(log_text)
+    
+    query_end_time = detect_end_time + padding_query_detect
+    
+    if df_buffered_rows_for_next_query is not None: # check whether df_buffered_rows_for_next_query has been defined
+        query_start_time = df_buffered_rows_for_next_query.index.max()
+        df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
+                                          columns_for_join=columns_for_join)
+        df_queried_data = pd.concat([df_buffered_rows_for_next_query, df_queried_data])
+    else:
+        query_start_time = detect_start_time - padding_query_detect
+        df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
+                                          columns_for_join=columns_for_join)
+
+    if start_row_value is not None: # check whether start_row_value has been defined
+        df_queried_data_with_start_end = add_start_end_rows(df_queried_data, query_end_time, 
+                                                              start_row_value=start_row_value, 
+                                                              column_for_detect=column_for_detect) # where to use the query_start_time
+    else:
+        df_queried_data_with_start_end = add_start_end_rows(df_queried_data, query_end_time, 
+                                                              column_for_detect=column_for_detect)
+
+    df_scanned_on_off_actions = scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_time, detect_end_time, 
+                    cref = 130,
+                    resample_freq=resample_freq, 
+                    columns_for_pivot=columns_for_pivot, 
+                    column_for_detect=column_for_detect)
+    
+    if df_scanned_on_off_actions.shape[0] > 0:
+        
+        save_on_off_to_db(db, df_scanned_on_off_actions, columns_for_pivot)
+        
+        log_text_df = df_scanned_on_off_actions.to_string()
+    
+        logging.info(log_text_df)
+        
+    next_query_start_time = detect_end_time - padding_query_detect
+     
+    start_row_value, df_buffered_rows_for_next_query = update_buffer(df_queried_data_with_start_end, next_query_start_time)
+    
+    return start_row_value, df_buffered_rows_for_next_query
