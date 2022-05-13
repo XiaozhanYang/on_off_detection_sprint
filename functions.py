@@ -137,8 +137,9 @@ def db_read_query(db, query_start_time, query_end_time, df_meta,
     return df_joined_ti
 
 def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_time, detect_end_time, 
-                cref = 40,
+                cref = 130,
                 resample_freq="1T", 
+                expiration_time_margins = [20, 240],
                 columns_for_pivot=['site_name', 'asset_type'], 
                 column_for_detect="W"):
 
@@ -154,7 +155,9 @@ def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_t
     for asset_name in main_assets:
 
         sr_watt = df_pivot_and_resampled_data[asset_name]
-        sr_on_off_actions_scanned = detect_on_off(sr_watt, detect_start_time, detect_end_time, cref = cref)
+        sr_on_off_actions_scanned = detect_on_off(sr_watt, detect_start_time, detect_end_time, 
+                                                  cref=cref, 
+                                                  expiration_time_margins=expiration_time_margins)
         if sr_on_off_actions_scanned.shape[0] > 0:
             df_on_off_actions_scanned = sr_to_df(sr_on_off_actions_scanned)
             df_on_off_actions_export = pd.concat([df_on_off_actions_export, df_on_off_actions_scanned])
@@ -229,6 +232,8 @@ def save_on_off_to_db(db, df_for_export, columns_for_tag):
 def batch_processing(db, df_meta, time_range, 
                      resample_freq,
                      padding_query_detect, 
+                     cref=130,
+                     expiration_time_margins=[20, 240],
                      columns_for_pivot=['site_name', 'asset_type'], 
                      column_for_detect='W', 
                      columns_for_join=['nid', 'channel'],
@@ -264,7 +269,8 @@ def batch_processing(db, df_meta, time_range,
                                                               column_for_detect=column_for_detect)
 
     df_scanned_on_off_actions = scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_time, detect_end_time, 
-                    cref = 130,
+                    cref = cref,
+                    expiration_time_margins = expiration_time_margins,
                     resample_freq=resample_freq, 
                     columns_for_pivot=columns_for_pivot, 
                     column_for_detect=column_for_detect)
@@ -275,7 +281,7 @@ def batch_processing(db, df_meta, time_range,
         
         log_text_df = df_scanned_on_off_actions.to_string()
     
-        logging.info(log_text_df)
+        logging.info('\n' + log_text_df + '\n')
         
     next_query_start_time = detect_end_time - padding_query_detect
      
