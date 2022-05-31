@@ -113,9 +113,12 @@ def meta_select_config(df_meta, meta_config, default_config):
 
         index_record = index_select & (~index_exclude)
 
-        for param in meta_config_record['config']:
+        for param in default_config:
+            if param in meta_config_record['config']:
             # also add the config from default
-            df_meta.loc[index_record, param] = meta_config_record['config'][param]
+                df_meta.loc[index_record, param] = meta_config_record['config'][param]
+            else:
+                df_meta.loc[index_record, param] = default_config[param]
 
         index_whole |= index_record
 
@@ -125,7 +128,7 @@ def meta_select_config(df_meta, meta_config, default_config):
 
 def query_metadata(db, meta_config, default_config,
                    columns_for_pivot = ['site_name', 'circuit_description'],
-                   columns_for_join = ['nid', 'channel']):
+                   columns_for_join = ['nid', 'channel_number']):
     
     # assets_list = []
     # for assets_from_selected_site in concerned_assets_from_sites:
