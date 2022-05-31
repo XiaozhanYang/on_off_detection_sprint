@@ -151,7 +151,7 @@ def query_metadata(db, meta_config, default_config,
     data_cursor.execute(query)
     resp = data_cursor.fetchall()
 
-    df_meta = pd.DataFrame(resp, columns=db.columns_for_query)
+    df_meta = pd.DataFrame(resp, columns=columns_for_query)
 
     conn.close()
     
