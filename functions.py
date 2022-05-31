@@ -160,7 +160,7 @@ def query_metadata(db, meta_config, default_config,
     
     df_meta_select_config = meta_select_config(df_meta, meta_config, default_config)
 
-    return df_meta_select_config[[*columns_for_join, *columns_for_pivot]]
+    return df_meta_select_config[[*columns_for_join, *columns_for_pivot, *default_config]]
 
 def db_read_query(db, query_start_time, query_end_time, df_meta, 
                   columns_for_join = ['nid', 'channel']):
