@@ -186,9 +186,7 @@ def db_read_query(db, query_start_time, query_end_time, df_meta,
     return df_joined_ti
 
 def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_time, detect_end_time, 
-                cref = 130,
                 resample_freq="1T", 
-                expiration_time_margins = [20, 240],
                 columns_for_pivot=['site_name', 'asset_type'], 
                 column_for_detect="W"):
 
@@ -197,16 +195,15 @@ def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_t
                                                       columns_for_pivot = columns_for_pivot, 
                                                       column_for_detect = column_for_detect)
 
-    main_assets = df_pivot_and_resampled_data.columns.tolist()
+
+    main_assets_with_config = df_pivot_and_resampled_data.columns.tolist()
 
     df_on_off_actions_export = pd.DataFrame([])
 
-    for asset_name in main_assets:
+    for asset_name_with_config in main_assets_with_config:
 
-        sr_watt = df_pivot_and_resampled_data[asset_name]
-        sr_on_off_actions_scanned = detect_on_off(sr_watt, detect_start_time, detect_end_time, 
-                                                  cref=cref, 
-                                                  expiration_time_margins=expiration_time_margins)
+        sr_watt = df_pivot_and_resampled_data[asset_name_with_config]
+        sr_on_off_actions_scanned = detect_on_off(sr_watt, detect_start_time, detect_end_time)
         if sr_on_off_actions_scanned.shape[0] > 0:
             df_on_off_actions_scanned = sr_to_df(sr_on_off_actions_scanned)
             df_on_off_actions_export = pd.concat([df_on_off_actions_export, df_on_off_actions_scanned])
@@ -228,11 +225,14 @@ def pivot_and_resample(df_joined_ti_selected_concat,
     # pdb.set_trace()
     return df_joined_pivot_selected_concat
 
-def detect_on_off(sr_watt, start_time, end_time, cref = 130, expiration_time_margins = [20, 240]):
+def detect_on_off(sr_watt, start_time, end_time):
 
+    # Get configuration from the sr_watt series
+    cref = sr_watt.name[-3]    
+    expiration_time_margins = sr_watt.name[-2:]
     
     sr_watt_gt = sr_watt.gt(cref).astype('int32')
-    
+   
     sr_watt_gt_rmax_shift_rmin = sr_watt_gt.rolling(expiration_time_margins[1]).max()\
                                               .shift(1-expiration_time_margins[1])\
                                               .rolling(expiration_time_margins[1]).min()
@@ -249,6 +249,7 @@ def detect_on_off(sr_watt, start_time, end_time, cref = 130, expiration_time_mar
     index_scan_window = (sr_on_off_actions.index >= start_time) & (sr_on_off_actions.index < end_time)
     sr_on_off_actions_scanned = sr_on_off_actions.loc[index_scan_window]
     
+    # To be removed (Was used for debugging)
     if sr_on_off_actions_scanned.shape[0]>0:
         
         global df_tests
