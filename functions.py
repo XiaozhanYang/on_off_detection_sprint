@@ -198,15 +198,17 @@ def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_t
 
 
     main_assets_with_config = df_pivot_and_resampled_data.columns.tolist()
+    columns_for_pivot = df_pivot_and_resampled_data.columns.names[:-3]
 
     df_on_off_actions_export = pd.DataFrame([])
 
     for asset_name_with_config in main_assets_with_config:
 
         sr_watt = df_pivot_and_resampled_data[asset_name_with_config]
+
         sr_on_off_actions_scanned = detect_on_off(sr_watt, detect_start_time, detect_end_time)
         if sr_on_off_actions_scanned.shape[0] > 0:
-            df_on_off_actions_scanned = sr_to_df(sr_on_off_actions_scanned)
+            df_on_off_actions_scanned = sr_to_df(sr_on_off_actions_scanned, columns_for_pivot=columns_for_pivot)
             df_on_off_actions_export = pd.concat([df_on_off_actions_export, df_on_off_actions_scanned])
 
     return df_on_off_actions_export
@@ -265,7 +267,7 @@ def sr_to_df(sr_on_off_actions_scanned, columns_for_pivot=['site_name', 'asset_t
     df_on_off_actions_frame = sr_on_off_actions_scanned.to_frame()
     time_column = sr_on_off_actions_scanned.index.name
 
-    df_on_off_actions_frame.columns = df_on_off_actions_frame.columns.set_names(columns_for_pivot)
+    df_on_off_actions_frame.columns = df_on_off_actions_frame.columns.droplevel([-3,-2,-1]).set_names(columns_for_pivot)
     
     print("\n", df_on_off_actions_frame, "\n")
 
@@ -284,8 +286,8 @@ def save_on_off_to_db(db, df_for_export, columns_for_tag):
 def batch_processing(db, df_meta, time_range, 
                      resample_freq,
                      padding_query_detect, 
-                     cref=130,
-                     expiration_time_margins=[20, 240],
+                    #  cref=130,
+                    #  expiration_time_margins=[20, 240],
                      columns_for_pivot=['site_name', 'asset_type'], 
                      column_for_detect='W', 
                      iot_columns_for_join=['nid', 'channel'],
