@@ -7,7 +7,7 @@ import time
 import pdb
 import logging
 
-from query_metadata import query_metadata
+from .query_metadata import query_metadata
 
 def add_start_end_rows(df_queried_data, query_end_time, start_row_value=None, column_for_detect='W'):
     
