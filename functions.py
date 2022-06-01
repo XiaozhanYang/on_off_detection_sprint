@@ -65,8 +65,6 @@ def query_iot_data(db, query_start_time, query_end_time, nid, channels_list=None
     except:
         
         q = f""" SELECT W, nid, channel FROM "GEN3/C" WHERE ("nid" = '{nid}') and (time >= '{query_start_time_str}') and (time < '{query_end_time_str}')"""
-
-
     
     results_gen3 = client_gen3.query(q)
 
@@ -118,6 +116,8 @@ def meta_select_config(df_meta, meta_config, default_config):
             if param in meta_config_record['config']:
             # also add the config from default
                 df_meta.loc[index_record, param] = meta_config_record['config'][param]
+            elif param in df_meta.columns:
+                df_meta.loc[index_record, param].fillna(default_config[param], inplace=True)
             else:
                 df_meta.loc[index_record, param] = default_config[param]
 
