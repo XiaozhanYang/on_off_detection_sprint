@@ -212,13 +212,14 @@ def scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_t
 
 def pivot_and_resample(df_joined_ti_selected_concat, 
               resample_freq="1T", 
-              columns_for_pivot=['site_name', 'asset_type'], 
+              columns_for_pivot=['site_name', 'asset_type'],
+              columns_for_config=['cref','expiration_time_low','expiration_time_high'], 
               column_for_detect="W"):
     
     # filling missing grouper windows by adding resample() function
     # we need to do this, because the groupby with additional columns will not produce the missing data points
     df_joined_pivot_selected_concat = df_joined_ti_selected_concat.groupby([pd.Grouper(freq=resample_freq), 
-                                                                            *columns_for_pivot]
+                                                                            *columns_for_pivot, *columns_for_config]
                                                                           )[column_for_detect] \
                                         .max().unstack(level=0) \
                                         .T.resample(resample_freq).ffill().ffill()
@@ -229,7 +230,7 @@ def detect_on_off(sr_watt, start_time, end_time):
 
     # Get configuration from the sr_watt series
     cref = sr_watt.name[-3]    
-    expiration_time_margins = sr_watt.name[-2:]
+    expiration_time_margins = [int(exp_value) for exp_value in sr_watt.name[-2:]]
     
     sr_watt_gt = sr_watt.gt(cref).astype('int32')
    
