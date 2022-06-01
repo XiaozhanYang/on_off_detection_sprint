@@ -177,8 +177,9 @@ def db_read_query(db, query_start_time, query_end_time, df_meta,
         df_iot_list.append(df_iot_nid)
         
     df_iot_all = pd.concat(df_iot_list)
-        
+    columns_for_join = iot_columns_for_join+meta_columns_for_join
     df_joined = df_iot_all.merge(df_meta, left_on=iot_columns_for_join, right_on=meta_columns_for_join).drop(columns=columns_for_join)
+
 
     df_joined.time = pd.to_datetime(df_joined.time)
     df_joined_ti = df_joined.set_index('time')
