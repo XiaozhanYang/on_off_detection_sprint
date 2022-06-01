@@ -33,6 +33,7 @@ def update_buffer(df_queried_data_with_start_end, next_query_start_time,
                      column_for_detect = 'W',
                      columns_for_pivot = ['site_name', 'asset_type']):
     
+    
     index_for_remove = df_queried_data_with_start_end.index < next_query_start_time
     index_for_buffer = df_queried_data_with_start_end.index >= next_query_start_time
     
