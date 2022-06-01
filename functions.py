@@ -163,20 +163,21 @@ def query_metadata(db, meta_config, default_config,
     return df_meta_select_config[[*columns_for_join, *columns_for_pivot, *default_config]]
 
 def db_read_query(db, query_start_time, query_end_time, df_meta, 
-                  columns_for_join = ['nid', 'channel']):
+                  iot_columns_for_join = ['nid', 'channel'],
+                  meta_columns_for_join = ['nid', 'channel_number']):
     
-    nids_groups = df_meta.groupby([columns_for_join[0]])
+    nids_groups = df_meta.groupby([meta_columns_for_join[0]])
     
     df_iot_list = []
     
     for nid, groups in nids_groups:
         
-        df_iot_nid = query_iot_data(db, query_start_time, query_end_time, nid, channels_list=groups[columns_for_join[1]].to_list())
+        df_iot_nid = query_iot_data(db, query_start_time, query_end_time, nid, channels_list=groups[meta_columns_for_join[1]].to_list())
         df_iot_list.append(df_iot_nid)
         
     df_iot_all = pd.concat(df_iot_list)
         
-    df_joined = df_iot_all.merge(df_meta, on=columns_for_join).drop(columns=columns_for_join)
+    df_joined = df_iot_all.merge(df_meta, left_on=iot_columns_for_join, right_on=meta_columns_for_join).drop(columns=columns_for_join)
 
     df_joined.time = pd.to_datetime(df_joined.time)
     df_joined_ti = df_joined.set_index('time')
@@ -283,7 +284,8 @@ def batch_processing(db, df_meta, time_range,
                      expiration_time_margins=[20, 240],
                      columns_for_pivot=['site_name', 'asset_type'], 
                      column_for_detect='W', 
-                     columns_for_join=['nid', 'channel'],
+                     iot_columns_for_join=['nid', 'channel'],
+                     meta_columns_for_join=['nid', 'channel_number'],
                      start_row_value=None, 
                      df_buffered_rows_for_next_query=None):
     
@@ -300,12 +302,14 @@ def batch_processing(db, df_meta, time_range,
     if df_buffered_rows_for_next_query is not None: # check whether df_buffered_rows_for_next_query has been defined
         query_start_time = df_buffered_rows_for_next_query.index.max()
         df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
-                                          columns_for_join=columns_for_join)
+                                          meta_columns_for_join=meta_columns_for_join, 
+                                          iot_columns_for_join=iot_columns_for_join)
         df_queried_data = pd.concat([df_buffered_rows_for_next_query, df_queried_data])
     else:
         query_start_time = detect_start_time - padding_query_detect
         df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
-                                          columns_for_join=columns_for_join)
+                                          meta_columns_for_join=meta_columns_for_join, 
+                                          iot_columns_for_join=iot_columns_for_join)
 
     if start_row_value is not None: # check whether start_row_value has been defined
         df_queried_data_with_start_end = add_start_end_rows(df_queried_data, query_end_time, 
@@ -316,8 +320,8 @@ def batch_processing(db, df_meta, time_range,
                                                               column_for_detect=column_for_detect)
 
     df_scanned_on_off_actions = scan_on_off_from_queried_data(df_queried_data_with_start_end, detect_start_time, detect_end_time, 
-                    cref = cref,
-                    expiration_time_margins = expiration_time_margins,
+                    # cref = cref,
+                    # expiration_time_margins = expiration_time_margins,
                     resample_freq=resample_freq, 
                     columns_for_pivot=columns_for_pivot, 
                     column_for_detect=column_for_detect)
