@@ -2,9 +2,9 @@ import pandas as pd
 import numpy as np
 import logging
 
-from .db_read_query import db_read_query
-from .scan_on_off_from_queried_data import scan_on_off_from_queried_data
-from influxdb import DataFrameClient
+from ..db_read_query import db_read_query
+from ..scan_on_off_from_queried_data import scan_on_off_from_queried_data
+from .save_on_off_to_db import save_on_off_to_db
 
 
 def add_start_end_rows(df_queried_data, query_end_time, start_row_value=None, column_for_detect='W'):
@@ -50,16 +50,8 @@ def update_buffer(df_queried_data_with_start_end, next_query_start_time,
     df_buffered_rows_for_next_query = df_queried_data_with_start_end.loc[index_for_buffer]
 
     return start_row_value, df_buffered_rows_for_next_query
-    
-def save_on_off_to_db(db, df_for_export, columns_for_tag):
 
-    client_test = DataFrameClient(host=db.host, port=db.port, database=db.database)
-    client_test.write_points(df_for_export, db.sink_table, 
-                                    tag_columns=columns_for_tag, 
-                                    batch_size=10000,
-                                    time_precision='ms')
-
-def batch_processing(db, df_meta, time_range, 
+def batch_processing(influxdb, postgresdb, df_meta, time_range, 
                      resample_freq,
                      padding_query_detect, 
                     #  cref=130,
@@ -83,13 +75,13 @@ def batch_processing(db, df_meta, time_range,
     
     if df_buffered_rows_for_next_query is not None: # check whether df_buffered_rows_for_next_query has been defined
         query_start_time = df_buffered_rows_for_next_query.index.max()
-        df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
+        df_queried_data = db_read_query(influxdb, query_start_time, query_end_time, df_meta, 
                                           meta_columns_for_join=meta_columns_for_join, 
                                           iot_columns_for_join=iot_columns_for_join)
         df_queried_data = pd.concat([df_buffered_rows_for_next_query, df_queried_data])
     else:
         query_start_time = detect_start_time - padding_query_detect
-        df_queried_data = db_read_query(db, query_start_time, query_end_time, df_meta, 
+        df_queried_data = db_read_query(influxdb, query_start_time, query_end_time, df_meta, 
                                           meta_columns_for_join=meta_columns_for_join, 
                                           iot_columns_for_join=iot_columns_for_join)
 
@@ -110,7 +102,7 @@ def batch_processing(db, df_meta, time_range,
     
     if df_scanned_on_off_actions.shape[0] > 0:
         
-        save_on_off_to_db(db, df_scanned_on_off_actions, columns_for_pivot)
+        save_on_off_to_db(influxdb, postgresdb, df_scanned_on_off_actions, columns_for_pivot)
         
         log_text_df = df_scanned_on_off_actions.to_string()
     
