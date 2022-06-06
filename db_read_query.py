@@ -30,7 +30,6 @@ def query_iot_data(db, query_start_time, query_end_time, nid, channels_list=None
                           'channel':pd.Series(dtype='str')})
         return df
 
-
 def db_read_query(db, query_start_time, query_end_time, df_meta, 
                   iot_columns_for_join = ['nid', 'channel'],
                   meta_columns_for_join = ['nid', 'channel_number']):
