@@ -39,7 +39,7 @@ def update_buffer(df_queried_data_with_start_end, next_query_start_time,
     
     df_queried_data_for_remove = df_queried_data_with_start_end.loc[index_for_remove]
     
-    df_last_values = df_queried_data_for_remove.sort_index(ascending = True).groupby(["asset_type"]).last()
+    df_last_values = df_queried_data_for_remove.sort_index(ascending = True).groupby(columns_for_pivot).last()
     
     df_last_values["time"] = next_query_start_time
     
