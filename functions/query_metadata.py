@@ -37,11 +37,13 @@ def meta_select_config(df_meta, meta_config, default_config):
         for param in default_config:
             if param in meta_config_record['config']:
             # also add the config from default
+                print("param in meta_config_record['config']")
                 df_meta.loc[index_record, param] = meta_config_record['config'][param]
             elif param in df_meta.columns:
-                print('df_meta.columns: null values')
+                print('param in df_meta.columns')
                 df_meta.loc[index_record, param].fillna(default_config[param], inplace=True)
             else:
+                print('param not in df_meta.columns')
                 df_meta.loc[index_record, param] = default_config[param]
 
         index_whole |= index_record
