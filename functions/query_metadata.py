@@ -41,7 +41,7 @@ def meta_select_config(df_meta, meta_config, default_config):
                 df_meta.loc[index_record, param] = meta_config_record['config'][param]
             elif param in df_meta.columns:
                 print('param in df_meta.columns')
-                df_meta.loc[index_record, param].fillna(default_config[param], inplace=True)
+                df_meta.loc[index_record, param] = df_meta.loc[index_record, param].fillna(default_config[param])
             else:
                 print('param not in df_meta.columns')
                 df_meta.loc[index_record, param] = default_config[param]
