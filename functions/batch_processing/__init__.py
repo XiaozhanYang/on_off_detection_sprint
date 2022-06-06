@@ -41,7 +41,7 @@ def update_buffer(df_queried_data_with_start_end, next_query_start_time,
     
     df_last_values = df_queried_data_for_remove.sort_index(ascending = True).groupby(columns_for_pivot).last()
     
-    df_last_values["time"] = next_query_start_time
+    df_last_values[time_column] = next_query_start_time
     
     df_last_values_with_time = df_last_values.reset_index().set_index([time_column])
 
@@ -110,6 +110,8 @@ def batch_processing(influxdb, postgresdb, df_meta, time_range,
         
     next_query_start_time = detect_end_time - padding_query_detect
      
-    start_row_value, df_buffered_rows_for_next_query = update_buffer(df_queried_data_with_start_end, next_query_start_time)
+    start_row_value, df_buffered_rows_for_next_query = update_buffer(df_queried_data_with_start_end, next_query_start_time, 
+                                                                     column_for_detect = column_for_detect,
+                                                                     columns_for_pivot = columns_for_pivot)
     
     return start_row_value, df_buffered_rows_for_next_query
