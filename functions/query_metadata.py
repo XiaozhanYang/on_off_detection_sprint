@@ -86,4 +86,5 @@ def query_metadata(db, meta_config, default_config,
     
     df_meta_select_config = meta_select_config(df_meta, meta_config, default_config)
 
+    print('line before return - for testing.')
     return df_meta_select_config[[*columns_for_join, *columns_for_pivot, *default_config]]
