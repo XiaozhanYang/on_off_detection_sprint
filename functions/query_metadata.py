@@ -48,8 +48,8 @@ def meta_select_config(df_meta, meta_config, default_config):
     df_meta_select_config = df_meta.loc[index_whole]
 
     for param in default_config:
-        if df_meta[param].mod(1).max() == 0:
-            df_meta[param] = df_meta[param].astype(int)
+        if df_meta_select_config[param].mod(1).max() == 0:
+            df_meta_select_config[param] = df_meta_select_config[param].astype(int)
     
     return df_meta_select_config
 
