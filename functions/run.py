@@ -42,7 +42,10 @@ def run(cf,
     # loop 
 
     while True:
-
+        
+        print('batch_time_size: ', batch_time_size)
+        print('delay_time_size: ', delay_time_size)
+        
         if pd.Timestamp.now(tz='UTC') - (start_time + padding_query_detect) > (batch_time_size+delay_time_size):
 
             time_range = (start_time, start_time + batch_time_size)
