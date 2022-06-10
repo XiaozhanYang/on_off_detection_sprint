@@ -26,15 +26,16 @@ def meta_select_config(df_meta, meta_config, default_config):
                 index_select_slice &= (df_meta[column].isin(select_slice[column]))
             index_select |= index_select_slice   
 
-        if 'exclude' in meta_config_record:
-            index_exclude = False
+        
+        index_exclude = False
+        if 'exclude' in meta_config_record: # in case 'exclude' is not provided
             for exclude_slice in meta_config_record['exclude']:
                 index_exclude_slice = True
                 for column in exclude_slice:
                     index_exclude_slice &= (df_meta[column].isin(exclude_slice[column]))
                 index_exclude |= index_exclude_slice
 
-            index_record = index_select & (~index_exclude)
+        index_record = index_select & (~index_exclude)
 
         for param in default_config:
             if param in meta_config_record['config']:
