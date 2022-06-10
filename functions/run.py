@@ -10,10 +10,14 @@ from .batch_processing import batch_processing
 def run(cf, 
         log_file_name= "logfile.log", 
         log_level=logging.INFO, 
-        batch_size_max = pd.Timedelta("3H"),
-        batch_size_min = pd.Timedelta("5T"),
-        delay_size = pd.Timedelta("1T"),
+        batch_size_max = "3H",
+        batch_size_min = "5T",
+        delay_size = "1T",
         time_second_for_sleep = 60):
+
+    batch_time_size_max = pd.Timedelta(batch_size_max)
+    batch_time_size_min = pd.Timedelta(batch_size_min),
+    delay_time_size = pd.Timedelta(delay_size),
 
     # initialisation
     
@@ -30,7 +34,7 @@ def run(cf,
                                                           cf.resample_freq)
 
     start_time = pd.Timestamp(cf.start_time_str, tz="UTC")
-    batch_size = batch_size_max
+    batch_time_size = batch_time_size_max
 
     start_row_value = None
     df_buffered_rows_for_next_query = None
@@ -39,9 +43,9 @@ def run(cf,
 
     while True:
 
-        if pd.Timestamp.now(tz='UTC') - (start_time + padding_query_detect) > (batch_size+delay_size):
+        if pd.Timestamp.now(tz='UTC') - (start_time + padding_query_detect) > (batch_time_size+delay_time_size):
 
-            time_range = (start_time, start_time + batch_size)
+            time_range = (start_time, start_time + batch_time_size)
 
             start_row_value, \
             df_buffered_rows_for_next_query \
@@ -58,8 +62,8 @@ def run(cf,
                                  start_row_value=start_row_value, 
                                  df_buffered_rows_for_next_query=df_buffered_rows_for_next_query)
 
-            start_time = start_time + batch_size
+            start_time = start_time + batch_time_size
 
         else:
-            batch_size = batch_size_min
+            batch_time_size = batch_time_size_min
             time.sleep(time_second_for_sleep)
