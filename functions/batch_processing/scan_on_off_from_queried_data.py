@@ -1,6 +1,5 @@
 import pandas as pd
 
-
 def pivot_and_resample(df_joined_ti_selected_concat, 
               resample_freq="1T", 
               columns_for_pivot=['site_name', 'asset_type'],
