@@ -16,8 +16,8 @@ def run(cf,
         time_second_for_sleep = 60):
 
     batch_time_size_max = pd.Timedelta(batch_size_max)
-    batch_time_size_min = pd.Timedelta(batch_size_min),
-    delay_time_size = pd.Timedelta(delay_size),
+    batch_time_size_min = pd.Timedelta(batch_size_min)
+    delay_time_size = pd.Timedelta(delay_size)
 
     # initialisation
     
@@ -45,7 +45,7 @@ def run(cf,
         
         print('batch_time_size: ', batch_time_size)
         print('delay_time_size: ', delay_time_size)
-        
+
         if pd.Timestamp.now(tz='UTC') - (start_time + padding_query_detect) > (batch_time_size+delay_time_size):
 
             time_range = (start_time, start_time + batch_time_size)
