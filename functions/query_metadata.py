@@ -7,8 +7,9 @@ def extract_columns(meta_config):
     for meta_config_record in meta_config:
         for select_slice in meta_config_record['select']:
             columns_for_query = columns_for_query.union(set(select_slice))
-        for exclude_slice in meta_config_record['exclude']:
-            columns_for_query = columns_for_query.union(set(exclude_slice))
+        if 'exclude' in meta_config_record:
+            for exclude_slice in meta_config_record['exclude']:
+                columns_for_query = columns_for_query.union(set(exclude_slice))
             
     return list(columns_for_query)
 
