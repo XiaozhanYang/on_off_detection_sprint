@@ -8,6 +8,7 @@ from .batch_processing.save_on_off_to_db import save_on_off_to_db
 
 from influxdb import InfluxDBClient
 import psycopg2
+import pandas as pd
 
 def empty_the_existing_data_in_db(influxdb, postgresdb):
 
@@ -63,3 +64,12 @@ def empty_the_existing_data_in_db(influxdb, postgresdb):
 
     conn.commit()
     cur.close()
+
+def calculate_padding_query_detect_from_expiration_time(df_meta, resample_padding_size, resample_freq):
+
+    expiration_time_margins = [int(df_meta.expiration_time_low.max()), int(df_meta.expiration_time_high.max())]
+    scan_padding_size = sum(expiration_time_margins) + 2 # expiration_time_margins are for the rolling window function, 1 is for diff function
+
+    padding_query_detect = (scan_padding_size + resample_padding_size) * pd.Timedelta(resample_freq)
+    
+    return padding_query_detect
