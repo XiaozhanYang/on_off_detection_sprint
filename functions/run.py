@@ -5,6 +5,7 @@ import time
 from .empty_the_existing_data_in_db import empty_the_existing_data_in_db
 from .query_metadata import query_metadata
 from .calculate_padding_query_detect import calculate_padding_query_detect
+from .batch_processing import batch_processing
 
 def run(cf, 
         log_file_name= "logfile.log", 
@@ -44,7 +45,7 @@ def run(cf,
 
             start_row_value, \
             df_buffered_rows_for_next_query \
-            = f.batch_processing(cf.influxdb, 
+            = batch_processing(cf.influxdb, 
                                  cf.postgresdb, 
                                  df_meta, 
                                  time_range, 
