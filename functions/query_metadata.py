@@ -47,11 +47,12 @@ def meta_select_config(df_meta, meta_config, default_config):
 
     df_meta_select_config = df_meta.loc[index_whole]
 
+    astype_dict =  {}
     for param in default_config:
         if df_meta_select_config[param].mod(1).max() == 0:
-            df_meta_select_config.loc[df_meta_select_config.index, param] = df_meta_select_config[param].astype(int)
+            astype_dict[param] = 'int64'
     
-    return df_meta_select_config
+    return df_meta_select_config.astype(astype_dict)
 
 def query_metadata(db, meta_config, default_config,
                    columns_for_pivot = ['site_name', 'circuit_description'],
