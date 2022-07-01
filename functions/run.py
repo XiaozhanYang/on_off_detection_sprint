@@ -13,7 +13,9 @@ def run(cf,
         batch_size_max = "3H",
         batch_size_min = "5T",
         delay_size = "1T",
-        time_second_for_sleep = 60):
+        max_retry = 100,
+        time_second_for_sleep = 60, 
+        time_second_for_retry = 5):
 
     batch_time_size_max = pd.Timedelta(batch_size_max)
     batch_time_size_min = pd.Timedelta(batch_size_min)
@@ -47,20 +49,30 @@ def run(cf,
 
             time_range = (start_time, start_time + batch_time_size)
 
-            start_row_value, \
-            df_buffered_rows_for_next_query \
-            = batch_processing(cf.influxdb, 
-                                 cf.postgresdb, 
-                                 df_meta, 
-                                 time_range, 
-                                 cf.resample_freq, 
-                                 padding_query_detect,
-                                 columns_for_pivot=cf.columns_for_pivot, 
-                                 column_for_detect=cf.column_for_detect, 
-                                 iot_columns_for_join=cf.iot_columns_for_join, 
-                                 meta_columns_for_join=cf.meta_columns_for_join, 
-                                 start_row_value=start_row_value, 
-                                 df_buffered_rows_for_next_query=df_buffered_rows_for_next_query)
+            for retry_count in range(max_retry):
+                try:
+                    start_row_value, \
+                    df_buffered_rows_for_next_query \
+                    = batch_processing(cf.influxdb, 
+                                        cf.postgresdb, 
+                                        df_meta, 
+                                        time_range, 
+                                        cf.resample_freq, 
+                                        padding_query_detect,
+                                        columns_for_pivot=cf.columns_for_pivot, 
+                                        column_for_detect=cf.column_for_detect, 
+                                        iot_columns_for_join=cf.iot_columns_for_join, 
+                                        meta_columns_for_join=cf.meta_columns_for_join, 
+                                        start_row_value=start_row_value, 
+                                        df_buffered_rows_for_next_query=df_buffered_rows_for_next_query)
+
+                    break
+                except Exception as err:
+                    logging.error('retry_count: '+str(retry_count+1), exc_info=True)
+                    logging.error(err, exc_info=True)
+                    time.sleep(time_second_for_retry)
+            else:
+                logging.critical('Maximum number of retry exceeded. ', exc_info=True)
 
             start_time = start_time + batch_time_size
 
